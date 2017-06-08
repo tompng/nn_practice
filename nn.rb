@@ -52,7 +52,7 @@ class ActivateLayer
 end
 
 class NN
-  def initialize layers
+  def initialize *layers
     @layers = layers
   end
 
@@ -62,12 +62,13 @@ class NN
       input = layer.forward input
       layer_input
     end
+    input
   end
 
   def backward
     propagation = 1
-    @layers.zip(@inputs).reverse_each do |layer, input|
-      delta, propagation = layer.backward input, propagation
+    @layers.zip(@inputs).reverse_each.map do |layer, input|
+      _delta, propagation = layer.backward input, propagation
     end
   end
 
@@ -94,51 +95,41 @@ class NN
   end
 end
 
-input = Numo::SFloat.new(4).seq
-l = LinearLayer.new 4, 3
-a = ActivateLayer.new
-l2 = Loss2Layer.new Numo::SFloat.new(3).seq
+input = Numo::SFloat.new(6).seq
 
-lo = l.forward(input)
-ao = a.forward(lo)
-l2o = l2.forward(ao)
+nn = NN.new(
+  LinearLayer.new(6, 4),
+  ActivateLayer.new,
+  LinearLayer.new(4, 3),
+  ActivateLayer.new,
+  Loss2Layer.new(Numo::SFloat.new(3).seq)
+)
 
-dl2, propagation = l2.backward(ao, 1)
-da, propagation = a.backward(lo, propagation)
-dl, propagation = l.backward(input, propagation)
-
-
-d=0.000001
-input = Numo::DFloat.new(4).seq
-lgrad = Numo::SFloat.new(3,4).fill 0
-3.times{|i|4.times{|j|
-  v=l.network[i,j]
-  l.network[i,j]=v+d
-  vp=l2.forward(a.forward(l.forward(input)))
-  l.network[i,j]=v-d
-  vm=l2.forward(a.forward(l.forward(input)))
-  l.network[i,j]=v
-  lgrad[i,j]=(vp-vm)/2/d
-}}
-
-igrad = 4.times.map{|i|
+d = 0.001
+igrad = input.size.times.map{|i|
   v=input[i]
   input[i]=v+d
-  vp=l2.forward(a.forward(l.forward(input)))
+  vp = nn.forward input
   input[i]=v-d
-  vm=l2.forward(a.forward(l.forward(input)))
-  input[i]=v
+  vm = nn.forward input
   (vp-vm)/2/d
 }
 
-
-hoge=Numo::SFloat.new(12,3).fill 0
-3.times{|i|
-  12.times{|ij|
-    hoge[ij,i] = input[ij%4]
+lgrad = nn.instance_eval{@layers}.map do |layer|
+  next nil unless LinearLayer === layer
+  w,h = layer.network.shape
+  w.times.map{|i|
+    h.times.map{|j|
+      v=layer.network[i,j]
+      layer.network[i,j]=v+d
+      vp = nn.forward input
+      layer.network[i,j]=v-d
+      vm = nn.forward input
+      layer.network[i,j]=v
+      (vp-vm)/2/d
+    }
   }
-}
+end
+
 
 binding.pry
-
-# d[i, [i,j]] = input[j] -> output[i]
