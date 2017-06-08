@@ -13,7 +13,7 @@ class LinearLayer
 
   def backward input, propagation
     [
-      Numo::SFloat[[*propagation]].transpose.dot(Numo::SFloat[[*input]]),
+      Numo::SFloat[propagation.to_a].transpose.dot(Numo::SFloat[input.to_a]),
       @network.transpose.dot(propagation)
     ]
   end
