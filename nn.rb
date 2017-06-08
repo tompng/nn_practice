@@ -11,12 +11,11 @@ class LinearLayer
     @network.dot input
   end
 
-  def update propagation, diff
-
-  end
-
-  def backward input, output
-    [@network, input]
+  def backward input, propagation
+    [
+      Numo::SFloat[[*propagation]].transpose.dot(Numo::SFloat[[*input]]),
+      @network.transpose.dot(propagation)
+    ]
   end
 end
 
@@ -29,8 +28,8 @@ class Loss2Layer
     ((input-@answer)**2).sum
   end
 
-  def backward input, output
-    [2*(input - @answer), 0]
+  def backward input, propagation
+    [0, 2 * (input - @answer) * propagation]
   end
 end
 
@@ -39,8 +38,8 @@ class ActivateLayer
     input.map { |x| activate x }
   end
 
-  def backward input, output
-    [input.map { |x| dactivate x }, 0]
+  def backward input, propagation
+    [0, input.map { |x| dactivate x } * propagation]
   end
 
   def activate x
@@ -58,8 +57,17 @@ class NN
   end
 
   def forward input
-    @layers.inject input do |input, layer|
-      layer.forward input
+    @inputs = @layers.map do |layer|
+      layer_input = input
+      input = layer.forward input
+      layer_input
+    end
+  end
+
+  def backward
+    propagation = 1
+    @layers.zip(@inputs).reverse_each do |layer, input|
+      delta, propagation = layer.backward input, propagation
     end
   end
 
@@ -95,10 +103,9 @@ lo = l.forward(input)
 ao = a.forward(lo)
 l2o = l2.forward(ao)
 
-l2inv = l2.backward(ao, l2o)
-ainv = a.backward(lo, ao)
-linv = l.backward(input, lo)
-
+dl2, propagation = l2.backward(ao, 1)
+da, propagation = a.backward(lo, propagation)
+dl, propagation = l.backward(input, propagation)
 
 
 d=0.000001
@@ -113,6 +120,16 @@ lgrad = Numo::SFloat.new(3,4).fill 0
   l.network[i,j]=v
   lgrad[i,j]=(vp-vm)/2/d
 }}
+
+igrad = 4.times.map{|i|
+  v=input[i]
+  input[i]=v+d
+  vp=l2.forward(a.forward(l.forward(input)))
+  input[i]=v-d
+  vm=l2.forward(a.forward(l.forward(input)))
+  input[i]=v
+  (vp-vm)/2/d
+}
 
 
 hoge=Numo::SFloat.new(12,3).fill 0
