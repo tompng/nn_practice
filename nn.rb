@@ -164,49 +164,36 @@ input = Numo::SFloat.new(1).seq
 nn = NN.new(
   LinearLayer.new(2, 16),
   SigmoidLayer.new,
-  LinearLayer.new(16, 1),
+  LinearLayer.new(16, 2),
 )
 
-nn2 = NN.new(
-  LinearLayer.new(2, 4),
-  SoftPlusLayer.new,
-  LinearLayer.new(4, 1)
-)
-
-nn2.layers[0].network = Numo::SFloat[[2,0,-1],[0,2,-1],[-2,0,1],[0,-2,1]]
-
-nn2.layers[2].network = Numo::SFloat[[4, 4, 4, 4, -5]]
+def answer v
+  x, y = v.to_a
+  Numo::SFloat[(x+y)/2, 2*((x-0.5)**2+(y-0.5)**2)]
+end
 
 dataset = 10000.times.map{
   input = Numo::SFloat.new(2).rand
-  [input, nn2.forward(input)]
+  [input, answer(input)]
 }
 p nn.loss{|d|dataset.each{|a|d<<a}}
 
 require 'chunky_png'
-img1 = ChunkyPNG::Image.new 128,128
-img2 = ChunkyPNG::Image.new 128,128
-def v2col a
-  a=Math.sin(100*a)
-  (((a<-1?-1:a>1?1:a)+1)/2*0xff).round
-end
-save=->{
-  aaa=128.times.to_a.repeated_permutation(2).map{|i,j|
-    x,y=i/128.0,j/128.0
-    nn.forward(Numo::SFloat[x,y]).to_a
+def saveimg file
+  img = ChunkyPNG::Image.new 128,128
+  v2col = ->a{
+    a=(a*10).round*0.1
+    ((a<0?0:a>1?1:a)*0xff).round
   }
-
   128.times.map{|i|128.times.map{|j|
     x,y=i/128.0,j/128.0
-    c1, c2 = nn2.forward(Numo::SFloat[x,y]).to_a
-    c2=c1
-    img1[i,j] = (v2col(c1)<<16)|(v2col(c2)<<8)|0x000000ff
-    c1, c2 = nn.forward(Numo::SFloat[x,y]).to_a
-    c2=c1
-    img2[i,j] = (v2col(c1)<<16)|(v2col(c2)<<8)|0x000000ff
+    c1, c2 = yield(x, y).to_a
+    img[i,j] = (v2col[c1]<<16)|(v2col[c2]<<8)|0x000000ff
   }}
-  img1.save 'a.png'
-  img2.save 'b.png'
-}
+  img.save file
+end
+saveimg('a.png'){|x,y|answer Numo::SFloat[x,y]}
+save = ->{saveimg('b.png'){|x,y|nn.forward Numo::SFloat[x,y]}}
+
 train = ->{p nn.batch_train{|d|dataset.sample(100).each{|a|d<<a}}}
 binding.pry
