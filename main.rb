@@ -10,7 +10,8 @@ nn = NN.new(
 
 def answer v
   x, y = v.to_a
-  Numo::SFloat[(x+y)/2, 2*((x-0.5)**2+(y-0.5)**2)]
+  v = (x-0.5)**2+(y-0.5)**2 < 0.2 ? 1 : 0
+  Numo::SFloat[v, 1-v]
 end
 
 dataset = 10000.times.map{
@@ -34,7 +35,7 @@ def saveimg file
   img.save file
 end
 saveimg('a.png'){|x,y|answer Numo::SFloat[x,y]}
-save = ->{saveimg('b.png'){|x,y|nn.forward Numo::SFloat[x,y]}}
+save = ->{saveimg('b.png'){|x,y|SoftmaxLayer.new.forward nn.forward Numo::SFloat[x,y]}}
 
 train = ->{p nn.batch_train{|d|dataset.sample(100).each{|a|d<<a}}}
 binding.pry

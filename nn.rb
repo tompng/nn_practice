@@ -12,11 +12,29 @@ class LinearLayer
 
   def backward input, propagation
     input = Numo::SFloat[*input,1]
-    prop = @network.transpose.dot(propagation)
+    prop = propagation.dot @network
     [
       Numo::SFloat[propagation.to_a].transpose.dot(Numo::SFloat[input.to_a]),
       Numo::SFloat[*prop.to_a.take(input.size-1)]
     ]
+  end
+end
+
+
+class SoftmaxLayer
+  def forward input
+    max = input.max
+    exps = input.map { |v| Math.exp(v-max) }
+    sum = exps.sum
+    exps.map { |v| v / sum }
+  end
+
+  def backward input, propagation
+    max = input.max
+    exps = input.map { |v| Math.exp(v-max) }
+    sum2 = exps.sum**2
+    ep = exps * propagation
+    [0, (ep + ep.sum * exps) / sum2]
   end
 end
 
@@ -57,7 +75,7 @@ class SigmoidLayer < ActivateLayerBase
   end
 end
 
-class SoftPlusLayer < ActivateLayerBase
+class SoftplusLayer < ActivateLayerBase
   def activate x
     v = Math.log(1+Math.exp(x))
     v.finite? ? v : (x < 0 ? 0 : x)
@@ -141,6 +159,7 @@ class NN
         @loss_layer_class.new(answer).forward forward(input)
       }.sum / dataset.size
     }
+    @delta = [@delta, 1.0/(1<<24)].max
     10.times do
       updated_loss = update.call @delta
       if updated_loss < average_loss
