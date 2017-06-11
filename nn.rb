@@ -20,7 +20,6 @@ class LinearLayer
   end
 end
 
-
 class SoftmaxLayer
   def forward input
     max = input.max
@@ -35,6 +34,21 @@ class SoftmaxLayer
     sum2 = exps.sum**2
     ep = exps * propagation
     [0, (ep + ep.sum * exps) / sum2]
+  end
+end
+
+class CrossEntropyLossLayer
+  attr_accessor :answer
+  def initialize answer
+    @answer = answer
+  end
+
+  def forward input
+    -input.to_a.zip(@answer).map { |v, t| Math.log(v) * t }.sum
+  end
+
+  def backward input, propagation
+    [0, Numo::SFloat.asarray(input.to_a.zip(@answer).map { |v, t| -t/(1e-10+v) } * propagation)]
   end
 end
 
@@ -65,7 +79,7 @@ end
 
 class SigmoidLayer < ActivateLayerBase
   def activate x
-    v = 1-1/(1+Math.exp(x))-0.5
+    v = 1-1/(1+Math.exp(x))
     v.finite? ? v : (x < 0 ? 0 : 1)
   end
 
@@ -168,6 +182,7 @@ class NN
       end
       @delta /= 2
     end
+    p [:delta, @delta]
   end
 
   class TrainingDataset < Array

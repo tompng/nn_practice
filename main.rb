@@ -30,6 +30,12 @@ class MNIST
   end
 
   def sample
+    if block_given?
+      loop do
+        a,b=self[rand @size]
+        return a, b if yield a
+      end
+    end
     self[rand @size]
   end
 
@@ -46,14 +52,36 @@ end
 mnist_train = MNIST.new 'data/train-images-idx3-ubyte', 'data/train-labels-idx1-ubyte'
 mnist_train.to_img(mnist_train.sample.last).save('tmp.png')
 
-
 nn = NN.new(
-  LinearLayer.new(28*28, 50),
+  LinearLayer.new(28*28, 64),
   SigmoidLayer.new,
-  LinearLayer.new(50, 10),
+  # LinearLayer.new(64, 64),
+  # SigmoidLayer.new,
+  LinearLayer.new(64, 10)
+  # SoftmaxLayer.new,
+  # loss_layer_class: CrossEntropyLossLayer
 )
 
-train = ->(batch_size=100){
+def smooth28 m
+  m2 = m.dup
+  28.times{|i|28.times{|j|
+    m2[28*i+j] = (
+      4*m[28*i+j]+
+      (i>0 ? m[(i-1)*28+j] : m[i*28+j])+
+      (j>0 ? m[i*28+j-1] : m[i*28+j])+
+      (i<28-1 ? m[(i+1)*28+j] : m[i*28+j])+
+      (j<28-1 ? m[i*28+j+1] : m[i*28+j])
+    )/8
+  }}
+  m2
+end
+
+smoothlayer = ->{
+  nw = nn.layers[0].network
+  64.times{|i|nw[i,0...28*28]=smooth28(nw[i,0...28*28].to_a)}
+}
+
+train = ->(batch_size=128){
   loss = nn.batch_train do |d|
     batch_size.times do
       answer_label, dataset = mnist_train.sample
@@ -65,16 +93,31 @@ train = ->(batch_size=100){
   p loss
 }
 
-test = ->{
-  answer_label, dataset = mnist_train.sample
-  output = SoftmaxLayer.new.forward nn.forward(dataset).to_a
-  p answer_label
-  puts output.each.with_index(0).to_a.sort_by(&:first).reverse.map{|a|a.join(' ')}
+test = ->file=nil{
+  idx = rand mnist_train.instance_eval{@size}
+  answer_label, dataset = mnist_train[idx]
+  mnist_train.to_img(dataset).save file if file
+  # output = SoftmaxLayer.new.forward
+  output = nn.forward(dataset).to_a
+  result = output.each.with_index(0).to_a.sort_by(&:first).reverse
+  p answer: answer_label, result: result.first.last, idx: idx
+  puts result.map{|a|a.join(' ')}
+}
+test2 = ->{
+  testsample = ->{
+    answer_label, dataset = mnist_train.sample
+    output = nn.forward(dataset).to_a
+    [answer_label, output.index(output.max)]
+  }
+  a=1000.times.map{testsample.call}.group_by(&:itself).map{|a,b|[a,b.size]}.sort_by(&:last).reverse.to_h
+  p 10.times.map{|i|a[[i,i]]||0}.sum
+  a
 }
 
 show = ->{
-  50.times{|i|
-    v = nn.layers[0].network[i,0..28*28]
+  64.times{|i|
+    v = nn.layers[0].network[i,0...28*28]
+    p v.size
     min, max = v.minmax
     img = mnist_train.to_img v.map{|v|(v-min)/(max-min)}
     img.save "tmp#{i}.png"
