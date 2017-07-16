@@ -3,7 +3,7 @@ require 'numo/narray'
 class LinearLayer
   attr_accessor :network
   def initialize insize, outsize
-    @network = Numo::SFloat.new(outsize, insize+1).rand(-4, 4)
+    @network = Numo::SFloat.new(outsize, insize+1).rand(-4.0/insize, 4.0/insize)
   end
 
   def forward input
@@ -44,11 +44,11 @@ class CrossEntropyLossLayer
   end
 
   def forward input
-    -input.to_a.zip(@answer).map { |v, t| Math.log(v) * t }.sum
+    -input.to_a.zip(@answer).map { |v, t| t==0 ? 0 : Math.log(v)}.sum
   end
 
   def backward input, propagation
-    [0, Numo::SFloat.asarray(input.to_a.zip(@answer).map { |v, t| -t/(1e-10+v) } * propagation)]
+    [0, Numo::SFloat.asarray(input.to_a.zip(@answer).map { |v, t| t/(1e-10+v) } * propagation)]
   end
 end
 
@@ -173,16 +173,16 @@ class NN
         @loss_layer_class.new(answer).forward forward(input)
       }.sum / dataset.size
     }
-    @delta = [@delta, 1.0/(1<<24)].max
-    10.times do
+    @delta = [@delta, 1.0/(1<<6)].max
+    4.times do
       updated_loss = update.call @delta
-      if updated_loss < average_loss
-        @delta *= 2
+      if updated_loss <= average_loss
+        @delta *= 1.5
         return updated_loss
       end
-      @delta /= 2
+      @delta /= 4
     end
-    p [:delta, @delta]
+    update.call @delta
   end
 
   class TrainingDataset < Array

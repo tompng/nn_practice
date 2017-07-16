@@ -54,34 +54,13 @@ mnist_train.to_img(mnist_train.sample.last).save('tmp.png')
 
 nn = NN.new(
   LinearLayer.new(28*28, 64),
-  SigmoidLayer.new,
-  # LinearLayer.new(64, 64),
-  # SigmoidLayer.new,
-  LinearLayer.new(64, 10)
-  # SoftmaxLayer.new,
-  # loss_layer_class: CrossEntropyLossLayer
+  ReLULayer.new,
+  LinearLayer.new(64, 10),
+  ReLULayer.new,
+  SoftmaxLayer.new
 )
 
-def smooth28 m
-  m2 = m.dup
-  28.times{|i|28.times{|j|
-    m2[28*i+j] = (
-      4*m[28*i+j]+
-      (i>0 ? m[(i-1)*28+j] : m[i*28+j])+
-      (j>0 ? m[i*28+j-1] : m[i*28+j])+
-      (i<28-1 ? m[(i+1)*28+j] : m[i*28+j])+
-      (j<28-1 ? m[i*28+j+1] : m[i*28+j])
-    )/8
-  }}
-  m2
-end
-
-smoothlayer = ->{
-  nw = nn.layers[0].network
-  64.times{|i|nw[i,0...28*28]=smooth28(nw[i,0...28*28].to_a)}
-}
-
-train = ->(batch_size=128){
+train = ->(batch_size=1024){
   loss = nn.batch_train do |d|
     batch_size.times do
       answer_label, dataset = mnist_train.sample
@@ -93,31 +72,18 @@ train = ->(batch_size=128){
   p loss
 }
 
-test = ->file=nil{
-  idx = rand mnist_train.instance_eval{@size}
-  answer_label, dataset = mnist_train[idx]
-  mnist_train.to_img(dataset).save file if file
-  # output = SoftmaxLayer.new.forward
-  output = nn.forward(dataset).to_a
-  result = output.each.with_index(0).to_a.sort_by(&:first).reverse
-  p answer: answer_label, result: result.first.last, idx: idx
-  puts result.map{|a|a.join(' ')}
-}
-test2 = ->{
-  testsample = ->{
+test = ->n=1000{
+  correct = n.times.count{
     answer_label, dataset = mnist_train.sample
     output = nn.forward(dataset).to_a
-    [answer_label, output.index(output.max)]
+    answer_label == output.index(output.max)
   }
-  a=1000.times.map{testsample.call}.group_by(&:itself).map{|a,b|[a,b.size]}.sort_by(&:last).reverse.to_h
-  p 10.times.map{|i|a[[i,i]]||0}.sum
-  a
+  correct.fdiv n
 }
 
 show = ->{
   64.times{|i|
     v = nn.layers[0].network[i,0...28*28]
-    p v.size
     min, max = v.minmax
     img = mnist_train.to_img v.map{|v|(v-min)/(max-min)}
     img.save "tmp#{i}.png"
@@ -125,3 +91,9 @@ show = ->{
 }
 
 binding.pry
+
+100000000.times{|i|
+  64.times{train.call 256}
+  show.call
+  p test3.call
+}
