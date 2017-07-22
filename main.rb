@@ -94,5 +94,5 @@ binding.pry
 100000000.times{|i|
   64.times{train.call 256}
   show.call
-  p test3.call
+  p test.call
 }
