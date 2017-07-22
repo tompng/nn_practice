@@ -1,6 +1,21 @@
 require 'numo/narray'
 
-class SimpleConvolutionLayer
+class LayerBase
+  attr_accessor :parameter
+  def forward input
+    raise :unimplemented
+  end
+
+  def backward input, propagation
+    raise :unimplemented
+  end
+
+  def update parameter, grad, delta
+    @parameter = parameter + grad * delta if parameter
+  end
+end
+
+class SimpleConvolutionLayer < LayerBase
   attr_reader :filter
   def initialize w:, h:, size:
     scale = 1.0 / size**2
@@ -35,7 +50,7 @@ class SimpleConvolutionLayer
   end
 end
 
-class MaxPoolingLayer
+class MaxPoolingLayer < LayerBase
   def initialize in_w:, in_h:, out_w:, out_h:, pool:
     @in_w = in_w
     @in_h = in_h
@@ -79,19 +94,22 @@ class MaxPoolingLayer
   end
 end
 
-class LinearLayer
-  attr_accessor :network
+class LinearLayer < LayerBase
   def initialize insize, outsize
-    @network = Numo::SFloat.new(outsize, insize+1).rand(-4.0/insize, 4.0/insize)
+    self.parameter = Numo::SFloat.new(outsize, insize+1).rand(-4.0/insize, 4.0/insize)
+  end
+
+  def network
+    parameter
   end
 
   def forward input
-    @network.dot Numo::SFloat[*input,1]
+    network.dot Numo::SFloat[*input,1]
   end
 
   def backward input, propagation
     input = Numo::SFloat[*input,1]
-    prop = propagation.dot @network
+    prop = propagation.dot network
     [
       Numo::SFloat[propagation.to_a].transpose.dot(Numo::SFloat[input.to_a]),
       Numo::SFloat[*prop.to_a.take(input.size-1)]
@@ -99,7 +117,7 @@ class LinearLayer
   end
 end
 
-class SoftmaxLayer
+class SoftmaxLayer < LayerBase
   def forward input
     max = input.max
     exps = input.map { |v| Math.exp(v-max) }
@@ -116,7 +134,7 @@ class SoftmaxLayer
   end
 end
 
-class CrossEntropyLossLayer
+class CrossEntropyLossLayer < LayerBase
   attr_accessor :answer
   def initialize answer
     @answer = answer
@@ -131,7 +149,7 @@ class CrossEntropyLossLayer
   end
 end
 
-class Loss2Layer
+class Loss2Layer < LayerBase
   attr_accessor :answer
   def initialize answer
     @answer = answer
@@ -146,7 +164,7 @@ class Loss2Layer
   end
 end
 
-class ActivateLayerBase
+class ActivateLayerBase < LayerBase
   def forward input
     input.map { |x| activate x }
   end
@@ -240,18 +258,15 @@ class NN
       loss
     }.sum / dataset.size
 
-    original_networks = @layers.map do |layer|
-      layer.network if LinearLayer === layer
-    end
-    update = ->(delta){
-      @layers.zip(original_networks, gradients).each do |layer, network, grad|
-        next unless network
-        layer.network = network - delta * grad
+    original_parameters = @layers.map &:parameter
+    update = lambda do |delta|
+      @layers.zip(original_parameters, gradients).each do |layer, params, grad|
+        layer.update params, grad, delta
       end
       dataset.map{ |input, answer|
         @loss_layer_class.new(answer).forward forward(input)
       }.sum / dataset.size
-    }
+    end
     @delta = [@delta, 1.0/(1<<6)].max
     4.times do
       updated_loss = update.call @delta
