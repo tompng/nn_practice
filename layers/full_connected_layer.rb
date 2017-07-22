@@ -1,4 +1,4 @@
-class LinearLayer < LayerBase
+class FullConnectedLayer < LayerBase
   def initialize insize, outsize, scale: 1 / insize**0.5
     self.parameter = Numo::SFloat.new(outsize, insize).rand(-scale, scale)
   end
@@ -19,9 +19,9 @@ class LinearLayer < LayerBase
   end
 end
 
-class LinearWithBiasLayer < LayerBase
+class FullConnectedBiasedLayer < LayerBase
   def initialize insize, outsize
-    @linear_layer = LinearLayer.new insize, outsize
+    @linear_layer = FullConnectedLayer.new insize, outsize
     @bias_layer = BiasLayer.new outsize
   end
 
@@ -48,33 +48,5 @@ class LinearWithBiasLayer < LayerBase
     bgrad, bprop = @bias_layer.backward nil, propagation
     lgrad, lprop = @linear_layer.backward input, bprop
     [GradientSet[lgrad, bgrad], lprop]
-  end
-end
-
-class BiasLayer < LayerBase
-  def initialize size, scale: 1 / 16.0
-    self.parameter = Numo::SFloat.new(size).rand(-scale, scale)
-  end
-
-  def forward input
-    input + parameter
-  end
-
-  def backward _input, propagation
-    [propagation, propagation]
-  end
-end
-
-class ConstBiasLayer < LayerBase
-  def initialize scale: 1 / 16.0
-    self.parameter = rand(-scale..scale)
-  end
-
-  def forward input
-    input + parameter
-  end
-
-  def backward _input, propagation
-    [propagation.sum, propagation]
   end
 end

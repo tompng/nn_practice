@@ -1,6 +1,7 @@
 require 'numo/narray'
 require_relative 'layers/base'
-require_relative 'layers/linear_layer'
+require_relative 'layers/bias_layer'
+require_relative 'layers/full_connected_layer'
 require_relative 'layers/loss_layer'
 require_relative 'layers/activate_layer'
 require_relative 'layers/convolution_layer'
