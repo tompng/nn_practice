@@ -52,9 +52,9 @@ end
 mnist_train = MNIST.new 'data/train-images-idx3-ubyte', 'data/train-labels-idx1-ubyte'
 
 nn = NN.new(
-  LinearLayer.new(28*28, 64),
+  LinearWithBiasLayer.new(28*28, 64),
   ReLULayer.new,
-  LinearLayer.new(64, 10),
+  LinearWithBiasLayer.new(64, 10),
   ReLULayer.new,
   SoftmaxLayer.new
 )

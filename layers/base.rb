@@ -12,3 +12,22 @@ class LayerBase
     @parameter = parameter - grad * delta if parameter
   end
 end
+
+class GradientSet
+  attr_reader :gradients
+  def initialize gradients
+    @gradients = gradients
+  end
+
+  def to_ary
+    @gradients
+  end
+
+  def + set
+    GradientSet.new(@gradients.zip(set.gradients).map { |a, b| a + b })
+  end
+
+  def self.[] *gradients
+    new gradients
+  end
+end

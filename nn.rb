@@ -49,7 +49,7 @@ class NN
       grad, propagation = loss_layer.backward output, 1
       grads = backward propagation
       if gradients
-        gradients = gradients.zip(grads).map { |a, b| a+b }
+        gradients = gradients.zip(grads).map { |a, b| a + b }
       else
         gradients = grads
       end
