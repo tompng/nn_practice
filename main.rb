@@ -50,7 +50,6 @@ class MNIST
 end
 
 mnist_train = MNIST.new 'data/train-images-idx3-ubyte', 'data/train-labels-idx1-ubyte'
-mnist_train.to_img(mnist_train.sample.last).save('tmp.png')
 
 nn = NN.new(
   LinearLayer.new(28*28, 64),
@@ -86,7 +85,7 @@ show = ->{
     v = nn.layers[0].network[i,0...28*28]
     min, max = v.minmax
     img = mnist_train.to_img v.map{|v|(v-min)/(max-min)}
-    img.save "tmp#{i}.png"
+    img.save "out/tmp#{i}.png"
   }
 }
 
