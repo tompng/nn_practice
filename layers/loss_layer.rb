@@ -5,11 +5,11 @@ class CrossEntropyLossLayer < LayerBase
   end
 
   def forward input
-    -input.to_a.zip(@answer).map { |v, t| t==0 ? 0 : Math.log(v)}.sum
+    -input.to_a.zip(@answer).map { |v, t| t.zero? ? 0 : Math.log(v)}.sum
   end
 
   def backward input, propagation
-    [0, Numo::SFloat.asarray(input.to_a.zip(@answer).map { |v, t| t/(1e-10+v) } * propagation)]
+    [0, Numo::SFloat.asarray(input.to_a.zip(@answer).map { |v, t| t / (1e-10 + v) } * propagation)]
   end
 end
 
@@ -20,7 +20,7 @@ class Loss2Layer < LayerBase
   end
 
   def forward input
-    ((input - answer) ** 2).sum
+    ((input - answer)**2).sum
   end
 
   def backward input, propagation
