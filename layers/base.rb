@@ -13,6 +13,16 @@ class LayerBase
   end
 end
 
+class IdentLayer < LayerBase
+  def forward input
+    input
+  end
+
+  def backward input, propagation
+    [0, propagation]
+  end
+end
+
 class GradientSet
   attr_reader :gradients
   def initialize gradients
