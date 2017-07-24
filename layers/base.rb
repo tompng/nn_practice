@@ -4,6 +4,10 @@ class LayerBase
     raise :unimplemented
   end
 
+  def forward_with_input_cache input
+    [forward(input), input]
+  end
+
   def backward input, propagation
     raise :unimplemented
   end
@@ -20,6 +24,44 @@ class IdentLayer < LayerBase
 
   def backward input, propagation
     [0, propagation]
+  end
+end
+
+class CompositeLayer < LayerBase
+  def initialize *layers
+    @layers = layers.flatten
+  end
+
+  def forward_with_input_cache input
+    input_cache = @layers.map do |layer|
+      input, cache = layer.forward_with_input_cache input
+      cache
+    end
+    [input, input_cache]
+  end
+
+  def backward input, propagation
+    gradients = @layers.zip(input).reverse_each.map do |layer, input|
+      gradient, propagation = layer.backward input, propagation
+      gradient
+    end
+    [GradientSet.new(gradients.reverse), propagation]
+  end
+
+  def parameter
+    @layers.map &:parameter
+  end
+
+  def update parameter, grad, delta
+    @layers.zip(parameter, grad.to_ary).each do |layer, p, g|
+      layer.update p, g, delta
+    end
+  end
+
+  def forward input
+    @layers.each do |layer|
+      input = layer.forward input
+    end
   end
 end
 

@@ -17,9 +17,8 @@ class NN
 
   def forward input
     @inputs = @layers.map do |layer|
-      layer_input = input
-      input = layer.forward input
-      layer_input
+      input, cache = layer.forward_with_input_cache input
+      cache
     end
     input
   end

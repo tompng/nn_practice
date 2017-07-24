@@ -19,34 +19,12 @@ class FullConnectedLayer < LayerBase
   end
 end
 
-class FullConnectedBiasedLayer < LayerBase
+class FullConnectedBiasedLayer < CompositeLayer
   def initialize insize, outsize
-    @linear_layer = FullConnectedLayer.new insize, outsize
-    @bias_layer = BiasLayer.new outsize
+    super FullConnectedLayer.new(insize, outsize), BiasLayer.new(outsize)
   end
 
   def network
-    @linear_layer.network
-  end
-
-  def parameter
-    [@linear_layer.parameter, @bias_layer.parameter]
-  end
-
-  def update parameter, grad, delta
-    lp, bp = parameter
-    lg, bg = grad
-    @linear_layer.update lp, lg, delta
-    @bias_layer.update bp, bg, delta if $aaa
-  end
-
-  def forward input
-    @bias_layer.forward @linear_layer.forward(input)
-  end
-
-  def backward input, propagation
-    bgrad, bprop = @bias_layer.backward nil, propagation
-    lgrad, lprop = @linear_layer.backward input, bprop
-    [GradientSet[lgrad, bgrad], lprop]
+    @layers.first.network
   end
 end
