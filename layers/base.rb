@@ -28,6 +28,7 @@ class IdentLayer < LayerBase
 end
 
 class CompositeLayer < LayerBase
+  attr_reader :layers
   def initialize *layers
     @layers = layers.flatten
   end

@@ -6,34 +6,30 @@ require_relative 'layers/loss_layer'
 require_relative 'layers/activate_layer'
 require_relative 'layers/convolution_layer'
 
-
 class NN
-  attr_reader :layers
   def initialize *layers, loss_layer_class: Loss2Layer
-    @layers = layers
+    @nn = CompositeLayer.new layers
     @delta = 0.1
     @loss_layer_class = loss_layer_class
   end
 
+  def layers
+    @nn.layers
+  end
+
   def forward input
-    @inputs = @layers.map do |layer|
-      input, cache = layer.forward_with_input_cache input
-      cache
-    end
-    input
+    output, @input_was = @nn.forward_with_input_cache input
+    output
   end
 
   def backward propagation
-    @layers.zip(@inputs).reverse_each.map { |layer, input|
-      grad, propagation = layer.backward input, propagation
-      grad
-    }.reverse
+    @nn.backward(@input_was, propagation).first
   end
 
   def loss
     dataset = TrainingDataset.new
     yield dataset
-    average_loss = dataset.map { |input, answer|
+    dataset.map { |input, answer|
       @loss_layer_class.new(answer).forward forward(input)
     }.sum / dataset.size
   end
@@ -41,27 +37,21 @@ class NN
   def batch_train
     dataset = TrainingDataset.new
     yield dataset
-    gradients = nil
-    average_loss = dataset.map { |input, answer|
+    gradient = nil
+    average_loss = 0
+    losses = dataset.map do |input, answer|
       loss_layer = @loss_layer_class.new(answer)
       output = forward(input)
       loss = loss_layer.forward output
-      grad, propagation = loss_layer.backward output, 1
-      grads = backward propagation
-      if gradients
-        gradients = gradients.zip(grads).map { |a, b| a + b }
-      else
-        gradients = grads
-      end
-      loss
-    }.sum / dataset.size
-
-    original_parameters = @layers.map &:parameter
+      _grad, propagation = loss_layer.backward output, 1
+      grad = backward propagation
+      average_loss += loss / dataset.size
+      gradient = gradient ? gradient + grad : grad
+    end
+    original_parameter = @nn.parameter
     update = lambda do |delta|
-      @layers.zip(original_parameters, gradients).each do |layer, params, grad|
-        layer.update params, grad, delta
-      end
-      dataset.map{ |input, answer|
+      @nn.update original_parameter, gradient, delta
+      dataset.map { |input, answer|
         @loss_layer_class.new(answer).forward forward(input)
       }.sum / dataset.size
     end
