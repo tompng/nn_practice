@@ -5,23 +5,23 @@ class SimpleConvolutionLayer < LayerBase
     @w = w
     @h = h
     @size = size
-    @filter = Numo::SFloat.new(size, size).rand(-scale, scale)
+    self.parameter = Numo::SFloat.new(size, size).rand(-scale, scale)
+  end
+
+  def filter
+    parameter
   end
 
   def forward input
     out_w = @w - @size + 1
     out_h = @h - @size + 1
     out_size = out_w * out_h
-    temp_size = out_size + @size - 1
     temp_size = @w * @h - (@size - 1) * (@w + 1)
     temp = Numo::SFloat.new(temp_size).fill(0)
-    @size.times do |i|
-      @size.times do |j|
-        f = @filter[i, j]
-        offset = j * @w + i
-        temp += f * input[offset...(offset + temp_size)]
-        p f, input[offset...(offset + temp_size)]
-      end
+    (0...@size).to_a.repeated_permutation(2) do |i, j|
+      f = filter[i, j]
+      offset = j * @w + i
+      temp += f * input[offset...(offset + temp_size)]
     end
     out = Numo::SFloat.new(out_size).fill(0)
     out_h.times do |j|
@@ -31,7 +31,62 @@ class SimpleConvolutionLayer < LayerBase
     end
     out
   end
+
+  def backward input, propagation
+    pw = @w - @size + 1
+    ph = @h - @size + 1
+    temp = Numo::SFloat.new(@w * @h).fill(0)
+    ph.times do |y|
+      temp[(@w * y)...(@w * y + pw)] = propagation[(pw * y)...(pw * y + pw)]
+    end
+    out = Numo::SFloat.new(@w * @h).fill(0)
+    (0...@size).to_a.repeated_permutation(2) do |i, j|
+      f = filter[i, j]
+      offset = j * @w + i
+      length = @w * (ph - 1) + pw
+      out[offset...(offset + length)] += f * temp[0...length]
+    end
+    grad = Numo::SFloat.new(@size, @size).fill(0)
+    (0...@size).to_a.repeated_permutation(2) do |i, j|
+      ph.times.map do |y|
+        offset = @w * (y + j) + i
+        grad[i, j] += input[offset...(offset + pw)].sum
+      end
+    end
+    [grad, out]
+  end
 end
+
+class PaddingLayer < LayerBase
+  def initialize w:, h:, padding:, with: 0
+    @w = w
+    @h = h
+    @padding = padding
+    @with = with
+  end
+
+  def forward input
+    w2 = @w + 2 * @padding
+    h2 = @h + 2 * @padding
+    Numo::SFloat.new(w2 * h2).fill(@with).tap do |out|
+      @h.times do |y|
+        offset = w2 * (y + @padding) + @padding
+        out[offset...(offset + @w)] = input[(@w * y)...(@w * y + @w)]
+      end
+    end
+  end
+
+  def backward _input, propagation
+    w2 = @w + 2 * @padding
+    out = Numo::SFloat.new(@w * @h).fill(0)
+    @h.times do |y|
+      offset = w2 * (y + @padding) + @padding
+        out[(@w * y)...(@w * y + @w)] = propagation[offset...(offset + @w)]
+    end
+    [0, out]
+  end
+end
+
 
 class MaxPoolingLayer < LayerBase
   def initialize in_w:, in_h:, out_w:, out_h:, pool:
