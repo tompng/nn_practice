@@ -112,6 +112,7 @@ class MaxPoolingLayer < LayerBase
         out[@out_w * j + i] = pools.max
       end
     end
+    out
   end
   def backward input, propagation
     out = Numo::SFloat.new(@in_w * @in_h).fill(0)
