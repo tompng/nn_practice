@@ -48,9 +48,12 @@ class SimpleConvolutionLayer < LayerBase
     end
     grad = Numo::SFloat.new(@size, @size).fill(0)
     (0...@size).to_a.repeated_permutation(2) do |i, j|
-      ph.times.map do |y|
-        offset = @w * (y + j) + i
-        grad[i, j] += input[offset...(offset + pw)].sum
+      ph.times do |y|
+        offset_i = @w * (y + j) + i
+        offset_p = @w * y
+        iline = input[offset_i...(offset_i + pw)]
+        pline = temp[offset_p...(offset_p + pw)]
+        grad[i, j] += iline.dot pline
       end
     end
     [grad, out]
