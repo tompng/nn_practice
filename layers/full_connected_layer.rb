@@ -28,3 +28,41 @@ class FullConnectedBiasedLayer < CompositeLayer
     @layers.first.network
   end
 end
+
+class SliceLayer < LayerBase
+  def initalize offset, length
+    @offset = offset
+    @length = length
+  end
+
+  def forward input
+    input[@offset...(@offset + @length)]
+  end
+
+  def backward input, propagation
+    out = Numo::SFloat.new(input.size).fill(0)
+    out[@offset...(@offset + @length)] = propagation
+    [0, out]
+  end
+end
+
+class ConcatLayer < LayerBase
+  def forward inputs
+    total_size = inputs.map(&:size).sum
+    out = Numo::SFloat.new(total_size).fill(0)
+    inputs.reduce 0 do |offset, input|
+      out[offset...(offset + input.size)] = input
+      offset + input.size
+    end
+    out
+  end
+
+  def backward inputs, propagation
+    propagations = []
+    inputs.reduce 0 do |offset, input|
+      propagations << propagation[offset...(offset + input.size)]
+      offset + input.size
+    end
+    [0, propagations]
+  end
+end
