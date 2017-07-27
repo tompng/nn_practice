@@ -12,16 +12,17 @@ require_relative 'mnist'
 
 nn = NN.new(
   VectorToSingleChannelLayer.new,
-  MultiChannelConvolutionLayer.new(w: 28, h: 28, size: 3, insize: 1, outsize: 4),
-  ChannelMapLayer.new(size: 4, layer: MaxPoolingLayer.new(in_w: 26, in_h: 26, out_w: 13, out_h: 13, pool: 2)),
+  MultiChannelConvolutionLayer.new(w: 28, h: 28, size: 2, insize: 1, outsize: 4),
   ChannelMapLayer.new(size: 4, layer: ReLULayer.new),
-  MultiChannelConvolutionLayer.new(w: 13, h: 13, size: 3, insize: 4, outsize: 8),
-  ChannelMapLayer.new(size: 8, layer: MaxPoolingLayer.new(in_w: 11, in_h: 11, out_w: 5, out_h: 5, pool: 2)),
+  ChannelMapLayer.new(size: 4, layer: MaxPoolingLayer.new(in_w: 27, in_h: 27, out_w: 13, out_h: 13, pool: 2)),
+  MultiChannelConvolutionLayer.new(w: 13, h: 13, size: 2, insize: 4, outsize: 8),
   ChannelMapLayer.new(size: 8, layer: ReLULayer.new),
-  MultiChannelConvolutionLayer.new(w: 5, h: 5, size: 3, insize: 8, outsize: 16),
-  ChannelMapLayer.new(size: 16, layer: MaxPoolingLayer.new(in_w: 3, in_h: 3, out_w: 1, out_h: 1, pool: 3)),
+  ChannelMapLayer.new(size: 8, layer: MaxPoolingLayer.new(in_w: 12, in_h: 12, out_w: 6, out_h: 6, pool: 2)),
+  MultiChannelConvolutionLayer.new(w: 6, h: 6, size: 3, insize: 8, outsize: 8),
+  ChannelMapLayer.new(size: 8, layer: ReLULayer.new),
+  ChannelMapLayer.new(size: 8, layer: MaxPoolingLayer.new(in_w: 4, in_h: 4, out_w: 2, out_h: 2, pool: 2)),
   ChannelConcatLayer.new,
-  FullConnectedBiasedLayer.new(16, 10),
+  FullConnectedBiasedLayer.new(32, 10),
   ReLULayer.new,
   SoftmaxLayer.new
 )
