@@ -80,6 +80,10 @@ class GradientSet
     GradientSet.new(@gradients.zip(set.gradients).map { |a, b| a + b if a || b })
   end
 
+  def [] index
+    @gradients[index]
+  end
+
   def self.[] *gradients
     new gradients
   end

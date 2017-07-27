@@ -19,13 +19,14 @@ nn = NN.new(
   ChannelMapLayer.new(size: 8, layer: MaxPoolingLayer.new(in_w: 11, in_h: 11, out_w: 5, out_h: 5, pool: 2)),
   ChannelMapLayer.new(size: 8, layer: ReLULayer.new),
   MultiChannelConvolutionLayer.new(w: 5, h: 5, size: 3, insize: 8, outsize: 16),
+  ChannelMapLayer.new(size: 16, layer: MaxPoolingLayer.new(in_w: 3, in_h: 3, out_w: 1, out_h: 1, pool: 3)),
   ChannelConcatLayer.new,
-  FullConnectedBiasedLayer.new(144, 64),
-  ReLULayer.new,
-  FullConnectedBiasedLayer.new(64, 10),
+  FullConnectedBiasedLayer.new(16, 10),
   ReLULayer.new,
   SoftmaxLayer.new
 )
+
+puts nn.parameter_size
 
 mnist_train = MNIST.new 'data/train-images-idx3-ubyte', 'data/train-labels-idx1-ubyte'
 

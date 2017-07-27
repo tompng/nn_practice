@@ -18,6 +18,10 @@ class NN
     @nn.layers
   end
 
+  def parameter_size
+    @nn.parameter.flatten.compact.map(&:to_a).flatten.size
+  end
+
   def forward input
     output, @input_was = @nn.forward_with_input_cache input
     output
@@ -40,7 +44,7 @@ class NN
     yield dataset
     gradient = nil
     average_loss = 0
-    losses = dataset.map do |input, answer|
+    dataset.map do |input, answer|
       loss_layer = @loss_layer_class.new(answer)
       output = forward(input)
       loss = loss_layer.forward output
