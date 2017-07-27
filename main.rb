@@ -2,23 +2,34 @@ require 'pry'
 require_relative 'nn'
 require_relative 'mnist'
 
+# nn = NN.new(
+#   FullConnectedBiasedLayer.new(28*28, 64),
+#   ReLULayer.new,
+#   FullConnectedBiasedLayer.new(64, 10),
+#   ReLULayer.new,
+#   SoftmaxLayer.new
+# )
+
+nn = NN.new(
+  VectorToSingleChannelLayer.new,
+  MultiChannelConvolutionLayer.new(w: 28, h: 28, size: 3, insize: 1, outsize: 4),
+  ChannelMapLayer.new(size: 4, layer: MaxPoolingLayer.new(in_w: 26, in_h: 26, out_w: 13, out_h: 13, pool: 2)),
+  ChannelMapLayer.new(size: 4, layer: ReLULayer.new),
+  MultiChannelConvolutionLayer.new(w: 13, h: 13, size: 3, insize: 4, outsize: 8),
+  ChannelMapLayer.new(size: 8, layer: MaxPoolingLayer.new(in_w: 11, in_h: 11, out_w: 5, out_h: 5, pool: 2)),
+  ChannelMapLayer.new(size: 8, layer: ReLULayer.new),
+  MultiChannelConvolutionLayer.new(w: 5, h: 5, size: 3, insize: 8, outsize: 16),
+  ChannelMapLayer.new(size: 16, layer: MaxPoolingLayer.new(in_w: 5, in_h: 5, out_w: 2, out_h: 2, pool: 2)),
+  ChannelMapLayer.new(size: 16, layer: ReLULayer.new),
+  ChannelConcatLayer.new,
+  FullConnectedBiasedLayer.new(64, 32),
+  ReLULayer.new,
+  FullConnectedBiasedLayer.new(32, 10),
+  ReLULayer.new,
+  SoftmaxLayer.new
+)
+
 mnist_train = MNIST.new 'data/train-images-idx3-ubyte', 'data/train-labels-idx1-ubyte'
-
-nn = NN.new(
-  FullConnectedBiasedLayer.new(28*28, 64),
-  ReLULayer.new,
-  FullConnectedBiasedLayer.new(64, 10),
-  ReLULayer.new,
-  SoftmaxLayer.new
-)
-
-nn = NN.new(
-  FullConnectedBiasedLayer.new(28*28, 64),
-  ReLULayer.new,
-  FullConnectedBiasedLayer.new(64, 10),
-  ReLULayer.new,
-  SoftmaxLayer.new
-)
 
 train = ->(batch_size=1024){
   loss = nn.batch_train do |d|
