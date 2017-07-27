@@ -92,22 +92,21 @@ end
 
 
 class MaxPoolingLayer < LayerBase
-  def initialize in_w:, in_h:, out_w:, out_h:, pool:
+  def initialize in_w:, in_h:, out_w:, out_h:, pool:, stride: pool
     @in_w = in_w
     @in_h = in_h
     @out_w = out_w
     @out_h = out_h
     @pool = pool
-    @stride_w = (in_w - pool) / (out_w - 1)
-    @stride_h = (in_h - pool) / (out_h - 1)
+    @stride = stride
   end
 
   def forward input
     out = Numo::SFloat.new(@out_w * @out_h).fill(0)
     @out_w.times do |i|
-      ii = @stride_w * i
+      ii = @stride * i
       @out_h.times do |j|
-        jj = @stride_h * j
+        jj = @stride * j
         pools = Array.new @pool do |s|
           idx = (jj + s) * @in_w + ii
           input[idx...(idx + @pool)].max
@@ -117,15 +116,16 @@ class MaxPoolingLayer < LayerBase
     end
     out
   end
+
   def backward input, propagation
     out = Numo::SFloat.new(@in_w * @in_h).fill(0)
     indices = @pool.times.flat_map do |i|
       Array.new(@pool) { |j| j * @in_w + i }
     end
     @out_w.times do |i|
-      ii = @stride_w * i
+      ii = @stride * i
       @out_h.times do |j|
-        jj = @stride_h * j
+        jj = @stride * j
         idx = jj * @in_w + ii
         values = indices.map { |idx2| input[idx + idx2] }
         max_index = idx + indices[values.index(values.max)]
