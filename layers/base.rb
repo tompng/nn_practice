@@ -63,6 +63,7 @@ class CompositeLayer < LayerBase
     @layers.each do |layer|
       input = layer.forward input
     end
+    input
   end
 end
 
