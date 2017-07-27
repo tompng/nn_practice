@@ -19,12 +19,10 @@ nn = NN.new(
   ChannelMapLayer.new(size: 8, layer: MaxPoolingLayer.new(in_w: 11, in_h: 11, out_w: 5, out_h: 5, pool: 2)),
   ChannelMapLayer.new(size: 8, layer: ReLULayer.new),
   MultiChannelConvolutionLayer.new(w: 5, h: 5, size: 3, insize: 8, outsize: 16),
-  ChannelMapLayer.new(size: 16, layer: MaxPoolingLayer.new(in_w: 5, in_h: 5, out_w: 2, out_h: 2, pool: 2)),
-  ChannelMapLayer.new(size: 16, layer: ReLULayer.new),
   ChannelConcatLayer.new,
-  FullConnectedBiasedLayer.new(64, 32),
+  FullConnectedBiasedLayer.new(144, 64),
   ReLULayer.new,
-  FullConnectedBiasedLayer.new(32, 10),
+  FullConnectedBiasedLayer.new(64, 10),
   ReLULayer.new,
   SoftmaxLayer.new
 )
