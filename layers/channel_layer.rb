@@ -64,7 +64,7 @@ class MultiChannelConvolutionLayer < LayerBase
 
   def forward input_channels
     @layer_matrix.map do |layers|
-      outputs = layers.zip(input_channels).map do |input, layer|
+      outputs = layers.zip(input_channels).map do |layer, input|
         layer.forward input
       end
       outputs.sum
