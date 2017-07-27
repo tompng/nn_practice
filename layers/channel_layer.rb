@@ -129,3 +129,23 @@ class ChannelMapLayer < LayerBase
     [GradientSet.new(grad_props.map &:first), grad_props.map(&:last)]
   end
 end
+
+class VectorToSingleChannelLayer < LayerBase
+  def forward input
+    [input]
+  end
+
+  def backward _input, propagation_channels
+    [0, propagation_channels.first]
+  end
+end
+
+class SingleChannelToVectorLayer < LayerBase
+  def forward input_channels
+    input_channels.first
+  end
+
+  def backward _input, propagation
+    [0, [propagation]]
+  end
+end
