@@ -12,6 +12,14 @@ nn = NN.new(
   SoftmaxLayer.new
 )
 
+nn = NN.new(
+  FullConnectedBiasedLayer.new(28*28, 64),
+  ReLULayer.new,
+  FullConnectedBiasedLayer.new(64, 10),
+  ReLULayer.new,
+  SoftmaxLayer.new
+)
+
 train = ->(batch_size=1024){
   loss = nn.batch_train do |d|
     batch_size.times do
