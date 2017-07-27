@@ -88,8 +88,8 @@ class MultiChannelConvolutionLayer < LayerBase
   def backward input_channels, propagation_channels
     grads = []
     props = []
-    @layer_matrix.zip(propagation_channels).with_index do |(layers, propagation), i|
-      layers.zip(input_channels).with_index do |(layer, input), j|
+    @layer_matrix.zip(propagation_channels).each_with_index do |(layers, propagation), i|
+      layers.zip(input_channels).each_with_index do |(layer, input), j|
         grad, prop = layer.backward input, propagation
         props[j] = props[j] ? props[j] + prop : prop
         grads[j * @layer_matrix.size + i] = grad
@@ -113,7 +113,7 @@ class ChannelMapLayer < LayerBase
   end
 
   def parameter
-    @layers.map &:parameters
+    @layers.map &:parameter
   end
 
   def update parameters, grads, delta
