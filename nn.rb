@@ -47,7 +47,7 @@ class NN
       _grad, propagation = loss_layer.backward output, 1
       grad = backward propagation
       average_loss += loss / dataset.size
-      gradient = gradient ? gradient + grad : grad
+      gradient = gradient ? gradient + grad : grad if grad
     end
     original_parameter = @nn.parameter
     update = lambda do |delta|

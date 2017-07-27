@@ -23,7 +23,7 @@ class IdentLayer < LayerBase
   end
 
   def backward input, propagation
-    [0, propagation]
+    [nil, propagation]
   end
 end
 
@@ -77,7 +77,7 @@ class GradientSet
   end
 
   def + set
-    GradientSet.new(@gradients.zip(set.gradients).map { |a, b| a + b })
+    GradientSet.new(@gradients.zip(set.gradients).map { |a, b| a + b if a || b })
   end
 
   def self.[] *gradients

@@ -4,7 +4,7 @@ class ChannelSumLayer < LayerBase
   end
 
   def backward input_channels, propagation
-    [0, input_channels.map { propagation }]
+    [nil, input_channels.map { propagation }]
   end
 end
 
@@ -136,7 +136,7 @@ class VectorToSingleChannelLayer < LayerBase
   end
 
   def backward _input, propagation_channels
-    [0, propagation_channels.first]
+    [nil, propagation_channels.first]
   end
 end
 
@@ -146,6 +146,6 @@ class SingleChannelToVectorLayer < LayerBase
   end
 
   def backward _input, propagation
-    [0, [propagation]]
+    [nil, [propagation]]
   end
 end

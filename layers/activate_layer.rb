@@ -4,7 +4,7 @@ class ActivateLayerBase < LayerBase
   end
 
   def backward input, propagation
-    [0, input.map { |x| dactivate x } * propagation]
+    [nil, input.map { |x| dactivate x } * propagation]
   end
 end
 
@@ -55,6 +55,6 @@ class SoftmaxLayer < LayerBase
     exps = input.map { |v| Math.exp(v - max) }
     sum2 = exps.sum**2
     ep = exps * propagation
-    [0, (ep + ep.sum * exps) / sum2]
+    [nil, (ep + ep.sum * exps) / sum2]
   end
 end

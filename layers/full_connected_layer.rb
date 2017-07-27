@@ -42,7 +42,7 @@ class SliceLayer < LayerBase
   def backward input, propagation
     out = Numo::SFloat.new(input.size).fill(0)
     out[@offset...(@offset + @length)] = propagation
-    [0, out]
+    [nil, out]
   end
 end
 
@@ -63,6 +63,6 @@ class ConcatLayer < LayerBase
       propagations << propagation[offset...(offset + input.size)]
       offset + input.size
     end
-    [0, propagations]
+    [nil, propagations]
   end
 end

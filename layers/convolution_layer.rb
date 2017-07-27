@@ -86,7 +86,7 @@ class PaddingLayer < LayerBase
       offset = w2 * (y + @padding) + @padding
         out[(@w * y)...(@w * y + @w)] = propagation[offset...(offset + @w)]
     end
-    [0, out]
+    [nil, out]
   end
 end
 
@@ -132,6 +132,6 @@ class MaxPoolingLayer < LayerBase
         out[max_index] += propagation[@out_w * j + i]
       end
     end
-    [0, out]
+    [nil, out]
   end
 end

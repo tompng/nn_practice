@@ -9,7 +9,7 @@ class CrossEntropyLossLayer < LayerBase
   end
 
   def backward input, propagation
-    [0, Numo::SFloat.asarray(input.to_a.zip(@answer).map { |v, t| t / (1e-10 + v) } * propagation)]
+    [nil, Numo::SFloat.asarray(input.to_a.zip(@answer).map { |v, t| t / (1e-10 + v) } * propagation)]
   end
 end
 
@@ -24,6 +24,6 @@ class Loss2Layer < LayerBase
   end
 
   def backward input, propagation
-    [0, 2 * (input - answer) * propagation]
+    [nil, 2 * (input - answer) * propagation]
   end
 end
