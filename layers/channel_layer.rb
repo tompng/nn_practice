@@ -149,3 +149,24 @@ class SingleChannelToVectorLayer < LayerBase
     [nil, [propagation]]
   end
 end
+
+class ChannelConcatLayer < LayerBase
+  def forward inputs
+    total_size = inputs.map(&:size).sum
+    out = Numo::SFloat.new(total_size).fill(0)
+    inputs.reduce 0 do |offset, input|
+      out[offset...(offset + input.size)] = input
+      offset + input.size
+    end
+    out
+  end
+
+  def backward inputs, propagation
+    propagations = []
+    inputs.reduce 0 do |offset, input|
+      propagations << propagation[offset...(offset + input.size)]
+      offset + input.size
+    end
+    [nil, propagations]
+  end
+end
