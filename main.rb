@@ -22,10 +22,26 @@ nn = NN.new(
   ChannelMapLayer.new(size: 8, layer: ReLULayer.new),
   ChannelMapLayer.new(size: 8, layer: MaxPoolingLayer.new(in_w: 4, in_h: 4, out_w: 2, out_h: 2, pool: 2)),
   ChannelConcatLayer.new,
-  FullConnectedBiasedLayer.new(32, 10),
+  FullConnectedBiasedLayer.new(2*2*8, 32),
   ReLULayer.new,
-  SoftmaxLayer.new
+  FullConnectedBiasedLayer.new(32, 10),
+  # SoftmaxLayer.new
 )
+
+grad_test = ->delta=0.001{
+  input = Numo::SFloat.new(28*28).rand
+  layer = nn.instance_eval{@nn}
+  output, cache = layer.forward_with_input_cache input
+  grad, prop = layer.backward cache, Numo::SFloat.new(10).fill(1)
+  param = layer.layers[1].instance_eval{@layer_matrix}[0][0].parameter
+  param0 = param[0]
+  param[0] += delta
+  out2 = nn.forward input
+  param[0] = param0
+  [grad[1][0][0], (out2.sum - output.sum)/delta]
+}
+
+
 
 puts nn.parameter_size
 
